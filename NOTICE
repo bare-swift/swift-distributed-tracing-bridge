@@ -4,5 +4,27 @@ Copyright (c) 2026 The bare-swift Project Authors.
 This product is licensed under the Apache License, Version 2.0, with LLVM
 exceptions. See LICENSE for details.
 
-This product includes software derived from the Rust crate `distributed-tracing-bridge`.
-See https://crates.io/crates/distributed-tracing-bridge for the original sources and license.
+This product depends on:
+
+  swift-distributed-tracing  (https://github.com/apple/swift-distributed-tracing,
+                                Apache-2.0)
+                              — defines the Tracer / Span / Instrument
+                                protocols this adapter implements.
+  swift-tracing-otlp         (https://github.com/bare-swift/swift-tracing-otlp,
+                                Apache-2.0 with LLVM exception)
+                              — provides the OTLP traces encoder.
+  swift-otlp-exporter        (https://github.com/bare-swift/swift-otlp-exporter,
+                                Apache-2.0 with LLVM exception)
+                              — provides OTLP common types.
+
+  (transitive, via swift-tracing-otlp / swift-otlp-exporter:)
+  swift-bytes                (https://github.com/bare-swift/swift-bytes,
+                                Apache-2.0 with LLVM exception)
+  swift-varint               (https://github.com/bare-swift/swift-varint,
+                                Apache-2.0 with LLVM exception)
+
+  (transitive, via swift-distributed-tracing:)
+  swift-service-context      (https://github.com/apple/swift-service-context,
+                                Apache-2.0)
+
+The Swift code in this package is original.

@@ -1,13 +1,45 @@
 # ``DistributedTracingBridge``
 
-One-line summary of what DistributedTracingBridge provides.
+Apple swift-distributed-tracing backend that routes to swift-tracing-otlp.
 
 ## Overview
 
-A short paragraph describing what this module does, who would use it, and what it explicitly does not do.
+Bootstrap once at startup with an `OTLPTracer`, then use the standard
+swift-distributed-tracing API (`withSpan`, `startSpan`) throughout your
+code. Periodically call `flushExport()` to obtain `Bytes` ready for
+`HTTP POST /v1/traces`.
+
+```swift
+import Tracing
+import OTLPExporter
+import DistributedTracingBridge
+
+let tracer = OTLPTracer(
+    resource: OTLP.Resource(...),
+    scope: OTLP.InstrumentationScope(...)
+)
+InstrumentationSystem.bootstrap(tracer)
+
+withSpan("operation") { span in
+    // ... work ...
+}
+
+let payload = tracer.flushExport()  // Bytes ready for HTTP POST
+```
+
+The factory implements `Tracer` from swift-distributed-tracing. Each
+trace becomes an `OTLP.Span` (the value type from swift-tracing-otlp);
+ended spans are buffered and emitted as a single `ExportTraceServiceRequest`
+on flush.
 
 ## Topics
 
-### Essentials
+### Top-level
 
-- _(Add public types / functions here as the API grows.)_
+- ``OTLPTracer``
+- ``OTLPSpan``
+- ``OTLPTraceIDs``
+
+### Errors
+
+- ``DistributedTracingBridgeError``
