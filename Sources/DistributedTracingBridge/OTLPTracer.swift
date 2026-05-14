@@ -99,8 +99,12 @@ public final class OTLPTracer: Tracer, @unchecked Sendable {
         into context: inout ServiceContext,
         using extractor: Extract
     ) where Extract.Carrier == Carrier {
-        // v0.1: no W3C TraceContext / B3 / Jaeger extraction. Caller may set
-        // `context.otlpTraceIDs` directly to inject trace correlation.
+        guard let header = extractor.extract(key: "traceparent", from: carrier) else { return }
+        guard let traceContext = OTLP.TraceContext.parse(traceparent: header) else { return }
+        context.otlpTraceIDs = OTLPTraceIDs(
+            traceID: traceContext.traceID,
+            spanID: traceContext.spanID
+        )
     }
 
     public func inject<Carrier, Inject: Injector>(
@@ -108,8 +112,14 @@ public final class OTLPTracer: Tracer, @unchecked Sendable {
         into carrier: inout Carrier,
         using injector: Inject
     ) where Inject.Carrier == Carrier {
-        // v0.1: no propagation. Caller can read `context.otlpTraceIDs` to
-        // serialize into transport headers manually.
+        guard let ids = context.otlpTraceIDs else { return }
+        let tc = OTLP.TraceContext(
+            traceID: ids.traceID,
+            spanID: ids.spanID,
+            traceFlags: 0x01
+        )
+        guard let header = tc.traceparent else { return }
+        injector.inject(header, forKey: "traceparent", into: &carrier)
     }
 
     // MARK: - Bridge-specific
