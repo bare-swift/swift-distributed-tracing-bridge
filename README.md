@@ -9,7 +9,7 @@ Part of the [bare-swift](https://github.com/bare-swift) ecosystem. Phase 3 Tranc
 ## Install
 
 ```swift
-.package(url: "https://github.com/bare-swift/swift-distributed-tracing-bridge.git", from: "0.1.0")
+.package(url: "https://github.com/bare-swift/swift-distributed-tracing-bridge.git", from: "0.2.0")
 ```
 
 ```swift
@@ -55,9 +55,25 @@ let payload: Bytes = tracer.flushExport()
 | `SpanLink` | `OTLP.Span.Link` |
 | `Span.recordError(_:)` | event named `"exception"` with semantic-convention attributes |
 
-## Trace context propagation (v0.1)
+## Trace context propagation
 
-Custom `ServiceContext` key `OTLPTraceIDsKey` carries trace+span ID. When `startSpan` is called with a context that has these IDs, the new span continues the trace. W3C TraceContext / B3 / Jaeger propagation formats deferred to v0.2.
+**In-process (v0.1+):** Custom `ServiceContext` key `OTLPTraceIDsKey` carries trace+span ID. When `startSpan` is called with a context that has these IDs, the new span continues the trace.
+
+**Cross-process (v0.2+):** The bridge implements W3C TraceContext (`traceparent` header) extract + inject via the Apple `Instrument` protocol. HTTP middleware that uses `InstrumentationSystem.instrument.extract` / `.inject` automatically propagates trace context across service boundaries.
+
+```swift
+// Inbound (server middleware): extract from HTTP headers into context.
+var context = ServiceContext.topLevel
+InstrumentationSystem.instrument.extract(headers, into: &context, using: HTTPExtractor())
+
+// Outbound (HTTP client): inject context into outgoing headers.
+var headers: [String: String] = [:]
+InstrumentationSystem.instrument.inject(context, into: &headers, using: HTTPInjector())
+```
+
+Cascading benefit: log records emitted via [`swift-log-bridge`](https://github.com/bare-swift/swift-log-bridge) and metric exemplars emitted via [`swift-metrics-bridge`](https://github.com/bare-swift/swift-metrics-bridge) automatically carry the cross-process trace IDs from the extracted context — no code changes in those packages.
+
+B3 and Jaeger header formats are deferred to v0.3+.
 
 ## flush, sampling, transport
 

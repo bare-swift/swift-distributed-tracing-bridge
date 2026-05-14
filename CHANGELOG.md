@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-14
+
+### Added
+- W3C TraceContext extract/inject in `OTLPTracer.extract(_:into:using:)` and `OTLPTracer.inject(_:into:using:)`. v0.1's no-op stubs are replaced with real implementations using swift-tracing-otlp v0.3's `OTLP.TraceContext.parse(traceparent:)` + `.traceparent` accessor.
+- 11 new tests covering W3C propagation: canonical extract, missing header, malformed length, uppercase hex (rejected), all-zero traceID (rejected), non-`00` version (rejected), inject with no context, valid inject shape, inject+extract round-trip, extract→startSpan chain, full-header round-trip.
+
+### Changed
+- swift-tracing-otlp dep bumped 0.1.0 → 0.3.0 (brings `OTLP.TraceContext` value type added in Phase 14B).
+
+### Migration (v0.1 → v0.2)
+- **Non-breaking.** v0.1 callers using `extract` / `inject` got no-ops; v0.2 callers get W3C behavior. Same method signatures.
+- Adopters who previously plumbed `traceparent` manually in their HTTP middleware can now rely on `InstrumentationSystem.instrument.extract` / `.inject`.
+
+### Cascading benefit
+- swift-log-bridge v0.1 + swift-metrics-bridge v0.1 auto-pick-up cross-process trace IDs via `ServiceContext.otlpTraceIDs` (which v0.2 now populates from inbound HTTP `traceparent` headers). No code changes required in those packages.
+
+### Phase 18
+- Tranche 18A of [RFC-0023](https://github.com/bare-swift/bare-swift/blob/main/rfcs/0023-phase-18-anchor-swift-distributed-tracing-bridge-w3c.md). Closes the in-process-only limitation of the Apple-frontend → bare-swift-OTLP adapter trinity.
+
 ## [0.1.0] - 2026-05-09
 
 ### Added
